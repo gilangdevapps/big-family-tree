@@ -1,0 +1,10 @@
+import type { APIRoute } from 'astro';
+import { setCurrentUser } from '../../../lib/store';
+
+export const POST: APIRoute = async () => {
+  setCurrentUser(null);
+  return new Response(null, {
+    status: 302,
+    headers: { Location: '/' },
+  });
+};
