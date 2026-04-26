@@ -1,0 +1,482 @@
+---
+import Layout from '../../../../../layouts/Layout.astro';
+const { treeId, memberId } = Astro.params;
+---
+
+<Layout title="Edit member">
+  <div class="page-shell">
+    <header class="top-nav">
+      <div class="container nav-inner">
+        <a href={`/tree/${treeId}`} class="back-link">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 4l-6 6 6 6"/>
+          </svg>
+          Back
+        </a>
+        <a href="/" class="wordmark">
+          <svg width="22" height="22" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <circle cx="14" cy="14" r="13" stroke="var(--color-primary)" stroke-width="2"/>
+            <circle cx="14" cy="8" r="3" fill="var(--color-primary)"/>
+            <circle cx="8" cy="20" r="3" fill="var(--color-primary)"/>
+            <circle cx="20" cy="20" r="3" fill="var(--color-primary)"/>
+            <line x1="14" y1="11" x2="8" y2="17" stroke="var(--color-primary)" stroke-width="1.5"/>
+            <line x1="14" y1="11" x2="20" y2="17" stroke="var(--color-primary)" stroke-width="1.5"/>
+            <line x1="8" y1="20" x2="20" y2="20" stroke="var(--color-primary)" stroke-width="1.5"/>
+          </svg>
+          <span>Big Family Tree</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="page-main container">
+      <div class="form-container">
+        <div class="form-header">
+          <h1 class="form-title" id="page-title">Edit member</h1>
+          <p class="form-subtitle">Update information about this family member.</p>
+        </div>
+
+        <div id="loading-state" style="text-align:center;padding:40px;color:var(--color-on-surface-variant)">Loading...</div>
+        <div id="error-state" style="text-align:center;padding:40px;" hidden>
+          <p style="color:var(--color-error);margin-bottom:16px">Failed to load member</p>
+          <a href={`/tree/${treeId}`} class="btn btn-ghost">Back to tree</a>
+        </div>
+
+        <form id="member-form" novalidate hidden>
+          <!-- Section 1: Core -->
+          <fieldset class="form-section">
+            <legend class="form-section-title">Basic information</legend>
+            <div class="fields-grid">
+              <div class="field">
+                <label for="first-name" class="field-label">First name <span class="required" aria-hidden="true">*</span></label>
+                <input type="text" id="first-name" name="first_name" class="field-input" placeholder="e.g. Eleanor" required />
+                <span class="field-error" id="first-name-error" hidden></span>
+              </div>
+              <div class="field">
+                <label for="last-name" class="field-label">Last name <span class="required" aria-hidden="true">*</span></label>
+                <input type="text" id="last-name" name="last_name" class="field-input" placeholder="e.g. Rigby" required />
+                <span class="field-error" id="last-name-error" hidden></span>
+              </div>
+              <div class="field">
+                <label for="gender" class="field-label">Gender</label>
+                <select id="gender" name="gender" class="field-input field-select">
+                  <option value="">Select…</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="birth-date" class="field-label">Birth date <span class="field-optional">(optional)</span></label>
+                <input type="date" id="birth-date" name="birth_date" class="field-input field-input-date" />
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Section 2: Life events -->
+          <details class="form-section-expandable" id="section-life" open>
+            <summary class="form-section-header">
+              <span class="form-section-title">Life events</span>
+              <svg class="section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 6l4 4 4-4"/>
+              </svg>
+            </summary>
+            <div class="fields-grid">
+              <div class="field">
+                <label for="death-date" class="field-label">Death date <span class="field-optional">(optional)</span></label>
+                <input type="date" id="death-date" name="death_date" class="field-input field-input-date" />
+              </div>
+              <div class="field">
+                <label for="birth-place" class="field-label">Birth place <span class="field-optional">(optional)</span></label>
+                <input type="text" id="birth-place" name="birth_place" class="field-input" placeholder="e.g. Galway, Ireland" />
+              </div>
+              <div class="field field-full">
+                <label for="location" class="field-label">Current location <span class="field-optional">(optional)</span></label>
+                <input type="text" id="location" name="location" class="field-input" placeholder="Where do they live now?" />
+              </div>
+              <div class="field field-full">
+                <label for="occupation" class="field-label">Occupation <span class="field-optional">(optional)</span></label>
+                <input type="text" id="occupation" name="occupation" class="field-input" placeholder="e.g. Schoolteacher" />
+              </div>
+            </div>
+          </details>
+
+          <!-- Section 3: Bio & Contact -->
+          <details class="form-section-expandable" id="section-bio">
+            <summary class="form-section-header">
+              <span class="form-section-title">Bio & contact</span>
+              <svg class="section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 6l4 4 4-4"/>
+              </svg>
+            </summary>
+            <div class="fields-grid">
+              <div class="field field-full">
+                <label for="bio" class="field-label">About <span class="field-optional">(optional)</span></label>
+                <textarea id="bio" name="bio" class="field-input field-textarea" rows="4" placeholder="Stories, achievements, anything worth remembering…"></textarea>
+                <span class="field-hint">Markdown supported</span>
+              </div>
+              <div class="field">
+                <label for="email" class="field-label">Email <span class="field-optional">(optional)</span></label>
+                <input type="email" id="email" name="email" class="field-input" placeholder="email@example.com" />
+              </div>
+              <div class="field">
+                <label for="phone" class="field-label">Phone <span class="field-optional">(optional)</span></label>
+                <input type="tel" id="phone" name="phone" class="field-input" placeholder="+1 555 000 0000" />
+              </div>
+            </div>
+          </details>
+
+          <!-- Photo -->
+          <div class="photo-section">
+            <label class="field-label">Profile photo <span class="field-optional">(optional)</span></label>
+            <div class="photo-upload-area">
+              <div class="photo-preview" id="photo-preview">
+                <span class="photo-initials" id="photo-initials"></span>
+              </div>
+              <div class="photo-actions">
+                <input type="file" id="photo-input" accept="image/*" hidden />
+                <button type="button" class="btn btn-outline btn-sm" id="upload-photo-btn">Upload photo</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="remove-photo-btn" hidden>Remove</button>
+              </div>
+              <div class="photo-progress" id="photo-progress" hidden>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+                </div>
+                <span class="progress-text" id="progress-text"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Root ancestor toggle -->
+          <div class="root-toggle-wrap">
+            <label class="toggle-label">
+              <input type="checkbox" id="is-root" name="is_root" class="toggle-input" />
+              <span class="toggle-switch" aria-hidden="true"></span>
+              <span class="toggle-text">
+                <span class="toggle-title">Mark as root ancestor</span>
+                <span class="toggle-desc">This person is the oldest known person in this tree</span>
+              </span>
+            </label>
+          </div>
+
+          <div id="form-error" class="form-error" hidden></div>
+
+          <div class="form-actions">
+            <a href={`/tree/${treeId}`} class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <span class="btn-label">Save changes</span>
+              <span class="btn-spinner" hidden aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="spin">
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28 8"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<style>
+  .page-shell { min-height: 100dvh; display: flex; flex-direction: column; }
+  .top-nav { background-color: var(--color-surface-container-lowest); border-bottom: 1px solid var(--color-outline-variant); position: sticky; top: 0; z-index: 100; }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: var(--space-4); }
+  .back-link { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: 500; color: var(--color-on-surface-variant); text-decoration: none; }
+  .back-link:hover { color: var(--color-on-surface); }
+  .wordmark { display: flex; align-items: center; gap: var(--space-2); text-decoration: none; color: var(--color-on-surface); font-family: var(--font-display); font-size: var(--text-lg); font-weight: 500; }
+  .page-main { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-block: var(--space-12) var(--space-16); }
+  .form-container { width: 100%; max-width: 600px; }
+  .form-header { margin-bottom: var(--space-10); }
+  .form-title { font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 500; margin-bottom: var(--space-2); }
+  .form-subtitle { color: var(--color-on-surface-variant); font-size: var(--text-base); }
+  .form-section { border: none; padding: 0; margin-bottom: var(--space-8); }
+  .form-section-title { font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-4); }
+  .form-section-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: var(--space-4) 0; border-bottom: 1px solid var(--color-outline-variant); margin-bottom: var(--space-6); list-style: none; }
+  .form-section-header::-webkit-details-marker { display: none; }
+  .section-chevron { transition: transform var(--duration-fast) var(--ease-out-quint); }
+  details[open] .section-chevron { transform: rotate(180deg); }
+  .form-section-expandable { margin-bottom: var(--space-6); }
+  .fields-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5); }
+  .field { display: flex; flex-direction: column; gap: var(--space-2); }
+  .field-full { grid-column: 1 / -1; }
+  .field-label { font-size: var(--text-sm); font-weight: 600; }
+  .required { color: var(--color-error); }
+  .field-optional { font-weight: 400; color: var(--color-on-surface-variant); font-size: var(--text-sm); }
+  .field-input { width: 100%; padding: var(--space-3) var(--space-4); font-family: var(--font-body); font-size: var(--text-base); color: var(--color-on-surface); background-color: var(--color-surface-container-lowest); border: 1.5px solid var(--color-outline-variant); border-radius: var(--radius-lg); outline: none; transition: border-color var(--duration-fast) var(--ease-out-quint), box-shadow var(--duration-fast) var(--ease-out-quint); }
+  .field-input::placeholder { color: var(--color-on-surface-variant); opacity: 0.7; }
+  .field-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px oklch(35% 0.03 145 / 15%); }
+  .field-input[data-error] { border-color: var(--color-error); }
+  .field-error { font-size: var(--text-sm); color: var(--color-error); }
+  .field-hint { font-size: var(--text-xs); color: var(--color-on-surface-variant); }
+  .field-select { cursor: pointer; }
+  .field-textarea { resize: vertical; min-height: 100px; }
+  .field-input-date { cursor: pointer; }
+  .photo-section { margin-bottom: var(--space-8); }
+  .photo-upload-area { display: flex; align-items: center; gap: var(--space-5); margin-top: var(--space-3); }
+  .photo-preview { width: 72px; height: 72px; border-radius: var(--radius-full); background-color: var(--color-primary-fixed-dim); display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); font-weight: 600; color: var(--color-on-primary-fixed); overflow: hidden; flex-shrink: 0; }
+  .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-actions { display: flex; flex-direction: column; gap: var(--space-2); }
+  .photo-progress { width: 100%; margin-top: var(--space-2); }
+  .progress-bar { height: 4px; background-color: var(--color-outline-variant); border-radius: var(--radius-full); overflow: hidden; }
+  .progress-fill { height: 100%; background-color: var(--color-primary); transition: width var(--duration-base) var(--ease-out-quint); }
+  .progress-text { font-size: var(--text-xs); color: var(--color-on-surface-variant); margin-top: var(--space-1); }
+  .root-toggle-wrap { margin-bottom: var(--space-8); padding: var(--space-5); background-color: var(--color-surface-container-low); border-radius: var(--radius-xl); border: 1px solid var(--color-outline-variant); }
+  .toggle-label { display: flex; align-items: flex-start; gap: var(--space-4); cursor: pointer; }
+  .toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle-switch { position: relative; width: 44px; height: 24px; border-radius: var(--radius-full); background-color: var(--color-outline-variant); flex-shrink: 0; margin-top: 2px; transition: background-color var(--duration-base) var(--ease-out-quint); }
+  .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: var(--radius-full); background-color: white; box-shadow: 0 1px 3px oklch(0% 0 0 / 20%); transition: transform var(--duration-base) var(--ease-out-quint); }
+  .toggle-input:checked + .toggle-switch { background-color: var(--color-primary); }
+  .toggle-input:checked + .toggle-switch::after { transform: translateX(20px); }
+  .toggle-input:focus-visible + .toggle-switch { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .toggle-text { display: flex; flex-direction: column; gap: 2px; }
+  .toggle-title { font-weight: 600; font-size: var(--text-base); }
+  .toggle-desc { font-size: var(--text-sm); color: var(--color-on-surface-variant); }
+  .form-error { padding: var(--space-4); margin-bottom: var(--space-4); background-color: var(--color-error-container); color: var(--color-on-error-container); border-radius: var(--radius-lg); font-size: var(--text-sm); font-weight: 500; }
+  .form-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); }
+  .btn { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-6); font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600; border-radius: var(--radius-full); border: none; cursor: pointer; text-decoration: none; transition: all var(--duration-fast) var(--ease-out-quint); }
+  .btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .btn-primary { background-color: var(--color-primary); color: var(--color-on-primary); }
+  .btn-primary:hover:not(:disabled) { background-color: var(--color-primary-container); }
+  .btn-ghost { background-color: transparent; color: var(--color-on-surface-variant); }
+  .btn-ghost:hover { background-color: var(--color-surface-container); color: var(--color-on-surface); }
+  .btn-outline { background-color: transparent; border: 1.5px solid var(--color-outline-variant); color: var(--color-on-surface); }
+  .btn-outline:hover { border-color: var(--color-primary); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-sm { padding: var(--space-2) var(--space-4); font-size: var(--text-xs); }
+  .spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 1.5s; } }
+  @media (max-width: 480px) { .fields-grid { grid-template-columns: 1fr; } .field-full { grid-column: 1; } }
+</style>
+
+<script define:vars={{ treeId, memberId }}>
+  import { getCurrentUser } from '../../../../../lib/store';
+
+  if (!getCurrentUser()) {
+    window.location.href = '/auth/magic-link';
+  }
+
+  // Load member data
+  async function loadMember() {
+    const loadingEl = document.getElementById('loading-state');
+    const errorEl = document.getElementById('error-state');
+    const formEl = document.getElementById('member-form') as HTMLFormElement;
+
+    try {
+      const res = await fetch(`/api/trees/${treeId}/members/${memberId}`);
+      if (!res.ok) throw new Error();
+      const member = await res.json();
+
+      if (loadingEl) loadingEl.hidden = true;
+      if (formEl) formEl.hidden = false;
+
+      // Populate form fields
+      const setVal = (id: string, val: any) => {
+        const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+        if (el && val != null) el.value = val;
+      };
+
+      setVal('first-name', member.first_name);
+      setVal('last-name', member.last_name);
+      setVal('gender', member.gender || '');
+      setVal('birth-date', member.birth_date || '');
+      setVal('death-date', member.death_date || '');
+      setVal('birth-place', member.birth_place || '');
+      setVal('location', member.location || '');
+      setVal('occupation', member.occupation || '');
+      setVal('bio', member.bio || '');
+      setVal('email', member.email || '');
+      setVal('phone', member.phone || '');
+      setVal('is-root', member.is_root ? 'on' : '');
+
+      // Photo
+      const photoPreview = document.getElementById('photo-preview')!;
+      const photoInitials = document.getElementById('photo-initials')!;
+      const removePhotoBtn = document.getElementById('remove-photo-btn') as HTMLButtonElement;
+
+      if (member.profile_photo_url) {
+        photoPreview.innerHTML = `<img src="${member.profile_photo_url}" alt="" />`;
+        if (removePhotoBtn) removePhotoBtn.hidden = false;
+      } else {
+        photoInitials.textContent = `${member.first_name[0]}${member.last_name[0]}`;
+      }
+
+      // Title
+      document.title = `Edit ${member.first_name} ${member.last_name} — Big Family Tree`;
+      const titleEl = document.getElementById('page-title');
+      if (titleEl) titleEl.textContent = `Edit ${member.first_name} ${member.last_name}`;
+
+    } catch {
+      if (loadingEl) loadingEl.hidden = true;
+      if (errorEl) errorEl.hidden = false;
+    }
+  }
+  loadMember();
+
+  // Photo upload
+  const photoInput = document.getElementById('photo-input') as HTMLInputElement;
+  const uploadPhotoBtn = document.getElementById('upload-photo-btn') as HTMLButtonElement;
+  const removePhotoBtn = document.getElementById('remove-photo-btn') as HTMLButtonElement;
+  const photoPreview = document.getElementById('photo-preview')!;
+  const photoInitials = document.getElementById('photo-initials')!;
+  const photoProgress = document.getElementById('photo-progress')!;
+  const progressFill = document.getElementById('progress-fill') as HTMLElement;
+  const progressText = document.getElementById('progress-text') as HTMLElement;
+
+  uploadPhotoBtn?.addEventListener('click', () => photoInput?.click());
+
+  photoInput?.addEventListener('change', async () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result as string;
+
+      // Optimistic preview
+      photoPreview.innerHTML = `<img src="${dataUrl}" alt="" />`;
+      if (removePhotoBtn) removePhotoBtn.hidden = false;
+      photoProgress.hidden = false;
+      progressFill.style.width = '30%';
+      progressText.textContent = 'Uploading…';
+
+      try {
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        const res = await fetch(`/api/trees/${treeId}/members/${memberId}/photo`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Done!';
+
+        setTimeout(() => { photoProgress.hidden = true; }, 1500);
+      } catch {
+        // Reset preview on error
+        photoPreview.innerHTML = `<span class="photo-initials" id="photo-initials">${photoInitials.textContent}</span>`;
+        photoProgress.hidden = true;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removePhotoBtn?.addEventListener('click', async () => {
+    removePhotoBtn.disabled = true;
+    try {
+      const res = await fetch(`/api/trees/${treeId}/members/${memberId}/photo`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        photoPreview.innerHTML = `<span class="photo-initials" id="photo-initials"></span>`;
+        removePhotoBtn.hidden = true;
+      }
+    } finally {
+      removePhotoBtn.disabled = false;
+    }
+  });
+
+  // Form submission
+  const form = document.getElementById('member-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const btnLabel = submitBtn.querySelector('.btn-label') as HTMLSpanElement;
+  const btnSpinner = submitBtn.querySelector('.btn-spinner') as HTMLSpanElement;
+  const formError = document.getElementById('form-error') as HTMLDivElement;
+
+  function getField(id: string) { return document.getElementById(id) as HTMLInputElement; }
+  function getError(id: string) { return document.getElementById(id) as HTMLSpanElement; }
+
+  function showFieldError(input: HTMLInputElement, errorEl: HTMLSpanElement, msg: string) {
+    input.setAttribute('data-error', 'true');
+    errorEl.textContent = msg;
+    errorEl.hidden = false;
+  }
+
+  function clearFieldError(input: HTMLInputElement, errorEl: HTMLSpanElement) {
+    input.removeAttribute('data-error');
+    errorEl.hidden = true;
+  }
+
+  ['first-name', 'last-name'].forEach(id => {
+    const input = getField(id);
+    const error = getError(`${id}-error`);
+    input.addEventListener('blur', () => {
+      if (!input.value.trim()) {
+        showFieldError(input, error, 'This field is required');
+      } else {
+        clearFieldError(input, error);
+      }
+    });
+    input.addEventListener('input', () => {
+      if (input.value.trim()) clearFieldError(input, error);
+    });
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const firstName = getField('first-name').value.trim();
+    const lastName = getField('last-name').value.trim();
+
+    let valid = true;
+
+    if (!firstName) {
+      showFieldError(getField('first-name'), getError('first-name-error'), 'This field is required');
+      valid = false;
+    }
+    if (!lastName) {
+      showFieldError(getField('last-name'), getError('last-name-error'), 'This field is required');
+      valid = false;
+    }
+
+    if (!valid) {
+      getField('first-name').focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    btnLabel.textContent = 'Saving…';
+    btnSpinner.hidden = false;
+    formError.hidden = true;
+
+    const payload = {
+      first_name: firstName,
+      last_name: lastName,
+      gender: getField('gender').value || null,
+      birth_date: getField('birth-date').value || null,
+      death_date: getField('death-date').value || null,
+      birth_place: getField('birth-place').value.trim() || null,
+      location: getField('location').value.trim() || null,
+      occupation: getField('occupation').value.trim() || null,
+      bio: getField('bio').value.trim() || null,
+      email: getField('email').value.trim() || null,
+      phone: getField('phone').value.trim() || null,
+      is_root: getField('is-root').checked,
+    };
+
+    try {
+      const res = await fetch(`/api/trees/${treeId}/members/${memberId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save');
+      }
+
+      window.location.href = `/tree/${treeId}`;
+    } catch (err) {
+      formError.textContent = err instanceof Error ? err.message : 'Something went wrong';
+      formError.hidden = false;
+      submitBtn.disabled = false;
+      btnLabel.textContent = 'Save changes';
+      btnSpinner.hidden = true;
+    }
+  });
+</script>

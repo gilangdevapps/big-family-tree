@@ -1,0 +1,2895 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Family Tree">
+  <div class="tree-shell">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="container top-bar-inner">
+        <div class="top-bar-left">
+          <a href="/dashboard" class="nav-back" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+              <path d="M12 4l-6 6 6 6"/>
+            </svg>
+          </a>
+          <h1 class="tree-name" id="tree-heading">Loading…</h1>
+        </div>
+        <div class="top-bar-right">
+          {true && (
+            <>
+              <a href={`/tree/${treeId}/members/new`} class="btn btn-primary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                  <line x1="8" y1="2" x2="8" y2="14"/>
+                  <line x1="2" y1="8" x2="14" y2="8"/>
+                </svg>
+                Add member
+              </a>
+              <button type="button" class="btn btn-ghost btn-sm" id="open-rel-modal-btn" title="Add relationship">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+                  <path d="M10 4a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM6 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM14 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                  <path d="M10 8v1M8.5 9.5L9 10M10.5 9.5L10 10" stroke-linecap="round"/>
+                </svg>
+                Add relationship
+              </button>
+            </>
+          )}
+          <a href={`/tree/${treeId}/settings`} class="btn btn-ghost btn-sm" aria-label="Tree settings">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+              <circle cx="10" cy="10" r="3"/>
+              <path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tree Canvas Area -->
+    <main class="tree-canvas" id="tree-canvas">
+      {isEmpty ? (
+        <div class="empty-tree-state">
+          <div class="empty-visual" aria-hidden="true">
+            <svg width="140" height="140" viewBox="0 0 140 140" fill="none">
+              <circle cx="70" cy="70" r="65" fill="var(--color-surface-container)" stroke="var(--color-outline-variant)" stroke-width="1.5" stroke-dasharray="6 5"/>
+              <circle cx="70" cy="55" r="18" fill="var(--color-surface-container-high)"/>
+              <circle cx="42" cy="100" r="12" fill="var(--color-surface-container-high)"/>
+              <circle cx="98" cy="100" r="12" fill="var(--color-surface-container-high)"/>
+              <line x1="70" y1="73" x2="42" y2="88" stroke="var(--color-secondary-fixed)" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="70" y1="73" x2="98" y2="88" stroke="var(--color-secondary-fixed)" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="42" y1="100" x2="98" y2="100" stroke="var(--color-secondary-fixed)" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h2 class="empty-title">This tree is waiting for roots</h2>
+          <p class="empty-body">Add your first family member to get started. You can start from the oldest person you know, or add yourself as a starting point.</p>
+          {true ? (
+            <a href={`/tree/${treeId}/members/new`} class="btn btn-primary">
+              Add your first member
+            </a>
+          ) : (
+            <p class="empty-note">Only admins can add members. Ask the tree owner to add someone.</p>
+          )}
+        </div>
+      ) : (
+        <>
+        <!-- Tree Toolbar -->
+        <div class="tree-toolbar" id="tree-toolbar" role="toolbar" aria-label="Tree navigation">
+          <div class="toolbar-group">
+            <button type="button" class="toolbar-btn" id="zoom-in-btn" title="Zoom in" aria-label="Zoom in">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <circle cx="10" cy="10" r="7"/>
+                <line x1="7" y1="10" x2="13" y2="10"/><line x1="10" y1="7" x2="10" y2="13"/>
+              </svg>
+            </button>
+            <button type="button" class="toolbar-btn" id="zoom-out-btn" title="Zoom out" aria-label="Zoom out">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <circle cx="10" cy="10" r="7"/>
+                <line x1="7" y1="10" x2="13" y2="10"/>
+              </svg>
+            </button>
+            <button type="button" class="toolbar-btn" id="zoom-reset-btn" title="Reset view" aria-label="Reset view">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <path d="M3 10a7 7 0 1 0 7-7"/>
+                <path d="M3 6v4h4"/>
+              </svg>
+            </button>
+          </div>
+          <div class="toolbar-separator" aria-hidden="true"></div>
+          <div class="toolbar-group">
+            <button type="button" class="toolbar-btn" id="collapse-all-btn" title="Collapse all branches" aria-label="Collapse all">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <path d="M4 8l6 5 6-5"/><line x1="10" y1="5" x2="10" y2="15"/>
+              </svg>
+            </button>
+          </div>
+          <div class="toolbar-separator" aria-hidden="true"></div>
+          <div class="toolbar-group">
+            <button type="button" class="toolbar-btn" id="filter-branch-btn" title="Filter to this branch" aria-label="Filter to this branch" disabled>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <path d="M3 6h14M6 6v8M14 6v3M14 13h-4"/>
+                <path d="M10 9l4 3M14 9l-4 3"/>
+              </svg>
+            </button>
+            <button type="button" class="toolbar-btn" id="clear-filter-btn" title="Show all" aria-label="Show all members" hidden>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <circle cx="10" cy="10" r="7"/>
+                <path d="M7 10h6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Breadcrumb -->
+        <nav class="tree-breadcrumb" id="tree-breadcrumb" aria-label="Tree navigation" hidden>
+          <ol class="breadcrumb-list" id="breadcrumb-list">
+          </ol>
+        </nav>
+
+        <!-- D3 SVG Tree -->
+        <div class="tree-svg-wrapper" id="tree-svg-wrapper" tabindex="0">
+          <svg id="tree-svg" aria-label="Family tree visualization" role="img"></svg>
+        </div>
+
+        <!-- Loading overlay -->
+        <div class="tree-loading" id="tree-loading" aria-live="polite" aria-label="Loading tree" hidden>
+          <div class="tree-loading-inner">
+            <div class="spinner"></div>
+            <span>Building family tree…</span>
+          </div>
+        </div>
+        </>
+      )}
+    </main>
+
+    <!-- Profile Panel (slide-out) -->
+    <div class="profile-panel-backdrop" id="panel-backdrop" hidden></div>
+    <aside class="profile-panel" id="profile-panel" aria-label="Member profile" aria-modal="true" hidden>
+      <div class="panel-header">
+        <button class="panel-close" id="panel-close" aria-label="Close panel">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M5 5l10 10M15 5L5 15"/>
+          </svg>
+        </button>
+      </div>
+      <div class="panel-body" id="panel-body">
+        <!-- Content loaded by JS -->
+      </div>
+    </aside>
+
+    <!-- Relationship Creation Modal -->
+    <div id="rel-modal" class="rel-modal" hidden role="dialog" aria-modal="true" aria-labelledby="rel-modal-title">
+      <div class="rel-modal-backdrop" id="rel-modal-backdrop"></div>
+      <div class="rel-modal-card">
+        <div class="rel-modal-header">
+          <h2 class="rel-modal-title" id="rel-modal-title">Add a relationship</h2>
+          <button class="rel-modal-close" id="rel-modal-close" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M5 5l10 10M15 5L5 15"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="rel-steps" id="rel-steps" aria-live="polite">
+          <span class="rel-step active" data-step="1">1. Type</span>
+          <span class="rel-step" data-step="2" hidden>2. First person</span>
+          <span class="rel-step" data-step="3" hidden>3. Second person</span>
+          <span class="rel-step" data-step="4" hidden>4. Details</span>
+        </div>
+
+        <!-- Step 1: Relationship type -->
+        <div class="rel-step-content" id="rel-step-1">
+          <p class="rel-step-desc">What kind of relationship?</p>
+          <div class="rel-type-grid">
+            <button type="button" class="rel-type-btn" data-type="spouse">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                <path d="M14 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z"/>
+                <path d="M8 20l4-6 4 6"/>
+                <path d="M6 12h4M18 12h4"/>
+              </svg>
+              <span class="rel-type-label">Spouse</span>
+              <span class="rel-type-desc">Married or partner</span>
+            </button>
+            <button type="button" class="rel-type-btn" data-type="parent_child">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                <circle cx="14" cy="8" r="4"/>
+                <circle cx="7" cy="20" r="3"/>
+                <circle cx="21" cy="20" r="3"/>
+                <line x1="14" y1="12" x2="7" y2="17"/>
+                <line x1="14" y1="12" x2="21" y2="17"/>
+              </svg>
+              <span class="rel-type-label">Parent–Child</span>
+              <span class="rel-type-desc">Biological or adoptive</span>
+            </button>
+            <button type="button" class="rel-type-btn" data-type="step_sibling">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                <path d="M8 10c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4"/>
+                <path d="M16 18c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4"/>
+                <path d="M8 14v4M16 14v4"/>
+              </svg>
+              <span class="rel-type-label">Step-sibling</span>
+              <span class="rel-type-desc">Through remarriage</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Person A -->
+        <div class="rel-step-content" id="rel-step-2" hidden>
+          <p class="rel-step-desc">Select the first person</p>
+          <div class="rel-person-list" id="rel-person-a-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Step 3: Person B -->
+        <div class="rel-step-content" id="rel-step-3" hidden>
+          <p class="rel-step-desc">Select the second person</p>
+          <div class="rel-person-list" id="rel-person-b-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Step 4: Details -->
+        <div class="rel-step-content" id="rel-step-4" hidden>
+          <div id="rel-details-form">
+            <!-- Spouse details -->
+            <div id="spouse-details" class="rel-detail-section" hidden>
+              <div class="field">
+                <label for="marriage-date" class="field-label">Marriage date <span class="field-optional">(optional)</span></label>
+                <input type="date" id="marriage-date" class="field-input" />
+              </div>
+              <div id="is-primary-wrap" class="field" hidden>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="is-primary-check" />
+                  <span>Primary spouse</span>
+                </label>
+              </div>
+              <div id="end-relationship-wrap" class="field">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="end-relationship-check" />
+                  <span>This relationship has ended</span>
+                </label>
+              </div>
+              <div id="ended-details" class="rel-ended-details" hidden>
+                <div class="field">
+                  <label for="divorce-date" class="field-label">End date</label>
+                  <input type="date" id="divorce-date" class="field-input" />
+                </div>
+                <div class="field">
+                  <label for="ended-reason" class="field-label">Reason</label>
+                  <select id="ended-reason" class="field-input field-select">
+                    <option value="">Select reason</option>
+                    <option value="divorce">Divorce</option>
+                    <option value="death">Death</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <!-- Parent-child details -->
+            <div id="parent-child-details" class="rel-detail-section" hidden>
+              <div id="adopted-wrap" class="field">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="is-adopted-check" />
+                  <span>This child is adopted</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rel-modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" id="rel-back-btn" hidden>Back</button>
+          <button type="button" class="btn btn-primary btn-sm" id="rel-next-btn" disabled>Next</button>
+          <button type="button" class="btn btn-primary btn-sm" id="rel-create-btn" hidden>
+            Add relationship
+          </button>
+        </div>
+
+        <div id="rel-error" class="rel-error" hidden></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</Layout>
+
+<style>
+  .tree-shell {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* --- Top Bar --- */
+  .top-bar {
+    background-color: var(--color-surface-container-lowest);
+    border-bottom: 1px solid var(--color-outline-variant);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .top-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    gap: var(--space-4);
+  }
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+  }
+
+  .nav-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    color: var(--color-on-surface-variant);
+    text-decoration: none;
+    transition: background-color var(--duration-fast) var(--ease-out-quint),
+                color var(--duration-fast) var(--ease-out-quint);
+    flex-shrink: 0;
+  }
+
+  .nav-back:hover {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .tree-name {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* --- Tree Canvas --- */
+  .tree-canvas {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* --- Tree Toolbar --- */
+  .tree-toolbar {
+    position: absolute;
+    top: var(--space-4);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background-color: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-1);
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: transparent;
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out-quint),
+                color var(--duration-fast) var(--ease-out-quint);
+    /* Ensure minimum 44x44px touch target on mobile */
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .toolbar-btn:hover {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .toolbar-btn:active {
+    transform: scale(0.92);
+  }
+
+  .toolbar-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background-color: var(--color-outline-variant);
+    margin: 0 var(--space-1);
+  }
+
+  /* --- Breadcrumb --- */
+  .tree-breadcrumb {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    z-index: 50;
+    max-width: 300px;
+  }
+
+  .breadcrumb-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    list-style: none;
+    font-size: var(--text-xs);
+  }
+
+  .breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .breadcrumb-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background-color: var(--color-surface-container-low);
+    border-radius: var(--radius-full);
+    color: var(--color-on-surface-variant);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out-quint),
+                color var(--duration-fast) var(--ease-out-quint);
+    font-weight: 500;
+  }
+
+  .breadcrumb-link:hover {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .breadcrumb-link.active {
+    background-color: var(--color-primary-fixed);
+    color: var(--color-on-primary-fixed);
+  }
+
+  .breadcrumb-sep {
+    color: var(--color-outline);
+    font-size: 10px;
+  }
+
+  .breadcrumb-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-primary-fixed-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--color-on-primary-fixed);
+    flex-shrink: 0;
+  }
+
+  /* --- Tree SVG --- */
+  .tree-svg-wrapper {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+
+  .tree-svg-wrapper:active {
+    cursor: grabbing;
+  }
+
+  #tree-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* D3 node styles (in SVG) */
+  :global(.tree-node-group) {
+    cursor: pointer;
+  }
+
+  :global(.tree-node-avatar) {
+    transition: transform var(--duration-fast) var(--ease-out-quint);
+  }
+
+  :global(.tree-node-group:hover .tree-node-avatar) {
+    transform: scale(1.06);
+  }
+
+  :global(.tree-node-ring) {
+    fill: none;
+    stroke: var(--color-primary);
+    stroke-width: 0;
+    transition: stroke-width var(--duration-fast) var(--ease-out-quint);
+  }
+
+  :global(.tree-node-group.selected .tree-node-ring) {
+    stroke-width: 3;
+  }
+
+  :global(.tree-node-root .tree-node-ring) {
+    stroke: var(--color-secondary);
+    stroke-width: 2.5;
+    stroke-dasharray: 4 2;
+  }
+
+  :global(.tree-node-initials) {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 500;
+    fill: var(--color-on-primary-fixed);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  :global(.tree-node-name) {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    fill: var(--color-on-surface);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  :global(.tree-node-dates) {
+    font-family: var(--font-body);
+    font-size: 9px;
+    fill: var(--color-on-surface-variant);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  :global(.tree-link) {
+    fill: none;
+    stroke: var(--color-secondary-fixed-dim);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  :global(.tree-link-spouse) {
+    stroke: var(--color-secondary-fixed);
+    stroke-dasharray: 5 3;
+  }
+
+  :global(.tree-collapse-btn) {
+    cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-out-quint);
+  }
+
+  :global(.tree-collapse-btn:hover) {
+    transform: scale(1.2);
+  }
+
+  :global(.tree-collapse-g) { cursor: pointer; }
+
+  :global(.tree-collapsed-count) {
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 600;
+    fill: var(--color-on-surface-variant);
+    pointer-events: none;
+  }
+
+  /* --- Loading --- */
+  .tree-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-surface);
+    z-index: 60;
+  }
+
+  .tree-loading-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-sm);
+  }
+
+  /* --- Empty State --- */
+  .empty-tree-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-5);
+    padding: var(--space-16) 0;
+    max-width: 440px;
+    margin-inline: auto;
+  }
+
+  .empty-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 500;
+  }
+
+  .empty-body {
+    font-size: var(--text-base);
+    color: var(--color-on-surface-variant);
+    line-height: var(--leading-relaxed);
+  }
+
+  .empty-note {
+    font-size: var(--text-sm);
+    color: var(--color-on-surface-variant);
+    font-style: italic;
+  }
+
+  /* --- Relationship Modal --- */
+  .rel-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+  }
+
+  .rel-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: oklch(0% 0 0 / 35%);
+    cursor: pointer;
+  }
+
+  .rel-modal-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90dvh;
+    overflow-y: auto;
+    background-color: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rel-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-6);
+    border-bottom: 1px solid var(--color-outline-variant);
+    flex-shrink: 0;
+  }
+
+  .rel-modal-title {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 500;
+  }
+
+  .rel-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: transparent;
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .rel-modal-close:hover {
+    background-color: var(--color-surface-container);
+  }
+
+  .rel-steps {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+    border-bottom: 1px solid var(--color-outline-variant);
+  }
+
+  .rel-step::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background-color: currentColor;
+    margin-right: var(--space-2);
+    opacity: 0.4;
+  }
+
+  .rel-step.active::before { opacity: 1; }
+  .rel-step.active { color: var(--color-primary); }
+
+  .rel-step-content {
+    padding: var(--space-6);
+    flex: 1;
+  }
+
+  .rel-step-desc {
+    font-size: var(--text-sm);
+    color: var(--color-on-surface-variant);
+    margin-bottom: var(--space-5);
+  }
+
+  .rel-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+
+  .rel-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-3);
+    background-color: var(--color-surface-container-low);
+    border: 1.5px solid var(--color-outline-variant);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color var(--duration-fast) var(--ease-out-quint),
+                background-color var(--duration-fast) var(--ease-out-quint);
+    color: var(--color-on-surface-variant);
+  }
+
+  .rel-type-btn:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .rel-type-btn.selected {
+    border-color: var(--color-primary);
+    background-color: oklch(35% 0.03 145 / 8%);
+    color: var(--color-primary);
+  }
+
+  .rel-type-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    display: block;
+  }
+
+  .rel-type-desc {
+    font-size: var(--text-xs);
+    color: var(--color-on-surface-variant);
+    display: block;
+  }
+
+  .rel-person-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .rel-person-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background-color: var(--color-surface-container-low);
+    border: 1.5px solid var(--color-outline-variant);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: border-color var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .rel-person-item:hover {
+    border-color: var(--color-primary);
+  }
+
+  .rel-person-item.selected {
+    border-color: var(--color-primary);
+    background-color: oklch(35% 0.03 145 / 8%);
+  }
+
+  .rel-person-item.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .rel-person-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-primary-fixed-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-on-primary-fixed);
+    flex-shrink: 0;
+  }
+
+  .rel-person-info { flex: 1; min-width: 0; }
+  .rel-person-name { font-size: var(--text-sm); font-weight: 600; }
+  .rel-person-dates { font-size: var(--text-xs); color: var(--color-on-surface-variant); }
+
+  .rel-detail-section { display: flex; flex-direction: column; gap: var(--space-4); }
+
+  .field { display: flex; flex-direction: column; gap: var(--space-2); }
+
+  .field-label { font-size: var(--text-sm); font-weight: 600; }
+  .field-optional { font-weight: 400; color: var(--color-on-surface-variant); }
+
+  .field-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    color: var(--color-on-surface);
+    background-color: var(--color-surface-container-lowest);
+    border: 1.5px solid var(--color-outline-variant);
+    border-radius: var(--radius-lg);
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .field-input:focus { border-color: var(--color-primary); }
+  .field-select { cursor: pointer; }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--color-outline);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  .rel-ended-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-outline-variant);
+  }
+
+  .rel-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-6);
+    border-top: 1px solid var(--color-outline-variant);
+    flex-shrink: 0;
+  }
+
+  .rel-error {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    background-color: var(--color-error-container);
+    border-top: 1px solid var(--color-outline-variant);
+  }
+
+  /* --- Profile Panel --- */
+  .profile-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: oklch(0% 0 0 / 30%);
+    z-index: 200;
+    cursor: pointer;
+  }
+
+  .profile-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100dvh;
+    width: 400px;
+    max-width: 100vw;
+    background-color: var(--color-surface-container-lowest);
+    border-left: 1px solid var(--color-outline-variant);
+    box-shadow: var(--shadow-2);
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: transform var(--duration-slow) var(--ease-out-quint);
+  }
+
+  .profile-panel:not([hidden]) {
+    transform: translateX(0);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--color-outline-variant);
+    flex-shrink: 0;
+  }
+
+  .panel-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: none;
+    background-color: transparent;
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out-quint),
+                color var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .panel-close:hover {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-6);
+  }
+</style>
+
+<script define:vars={{ treeId }}>
+  import * as d3 from 'd3';
+  import { getCurrentUser, userHasAccess } from '../../../lib/store';
+
+  // Auth check
+  if (!getCurrentUser() || !userHasAccess(treeId, getCurrentUser().id)) {
+    window.location.href = '/auth/magic-link';
+  }
+
+  // Relationships data for panel family links (fetched client-side)
+  let RELS: { relationships: any[] } = { relationships: [] };
+  let MEMBERS: { list: any[] } = { list: [] };
+  let TREE: { id: string; rootId: string | null } = { id: treeId, rootId: null };
+
+  // Update page title and heading with tree name
+  async function updateTreeInfo() {
+    try {
+      const res = await fetch(`/api/trees/${treeId}`);
+      if (res.ok) {
+        const tree = await res.json();
+        TREE.rootId = tree.root_person_id;
+        document.title = `${tree.name} — Big Family Tree`;
+        const heading = document.getElementById('tree-heading');
+        if (heading) heading.textContent = tree.name;
+      }
+    } catch {}
+  }
+
+  // Fetch graph data
+  async function fetchGraph() {
+    try {
+      const res = await fetch(`/api/trees/${treeId}/graph`);
+      if (res.ok) {
+        const data = await res.json();
+        MEMBERS.list = data.members || [];
+        RELS.relationships = data.relationships || [];
+        TREE.rootId = data.root_person_id;
+      }
+    } catch {}
+  }
+
+  interface Member {
+    id: string;
+    first_name: string;
+    last_name: string;
+    birth_date: string | null;
+    death_date: string | null;
+    gender: string | null;
+    birth_place: string | null;
+    location: string | null;
+    occupation: string | null;
+    bio: string | null;
+    email: string | null;
+    phone: string | null;
+    profile_photo_url: string | null;
+    is_root: boolean;
+    last_edited_by: string | null;
+    last_edited_at: string | null;
+  }
+
+  const panel = document.getElementById('profile-panel')!;
+  const backdrop = document.getElementById('panel-backdrop')!;
+  const panelBody = document.getElementById('panel-body')!;
+  const panelClose = document.getElementById('panel-close')!;
+
+  let currentMemberId: string | null = null;
+
+  function formatDate(iso: string | null): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function getRelationshipLabel(rel: any, memberId: string): string {
+    if (rel.person_a_id === memberId) {
+      if (rel.relationship_type === 'spouse') return 'Spouse';
+      if (rel.relationship_type === 'parent_child') {
+        const other = MEMBERS.list.find((m: Member) => m.id === rel.person_b_id);
+        return other ? `${other.first_name} is their child` : 'Child';
+      }
+      if (rel.relationship_type === 'step_sibling') return 'Step sibling';
+    }
+    if (rel.person_b_id === memberId) {
+      if (rel.relationship_type === 'spouse') return 'Spouse';
+      if (rel.relationship_type === 'parent_child') {
+        const other = MEMBERS.list.find((m: Member) => m.id === rel.person_a_id);
+        return other ? `${other.first_name} is their parent` : 'Parent';
+      }
+      if (rel.relationship_type === 'step_sibling') return 'Step sibling';
+    }
+    return rel.relationship_type;
+  }
+
+  async function openPanel(memberId: string) {
+    currentMemberId = memberId;
+
+    panel.hidden = false;
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    panelBody.innerHTML = `
+      <div class="panel-loading">
+        <div class="skeleton-avatar"></div>
+        <div class="skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+      </div>
+    `;
+
+    try {
+      const res = await fetch(`/api/trees/${treeId}/members/${memberId}`, {
+        credentials: 'include',
+      });
+
+      if (!res.ok) throw new Error('Failed to load');
+
+      const member: Member & { last_editor_email?: string } = await res.json();
+
+      const vitalParts: string[] = [];
+      if (member.birth_date) vitalParts.push(`Born ${formatDate(member.birth_date)}`);
+      if (member.birth_place) vitalParts.push(`in ${member.birth_place}`);
+      if (member.death_date) vitalParts.push(`Died ${formatDate(member.death_date)}`);
+
+      const vitalText = vitalParts.join(' ') + (vitalParts.length > 0 ? '' : 'Dates unknown');
+
+      const locationLine = member.location
+        ? `<p class="panel-field"><span class="panel-field-label">Location</span>${escapeHtml(member.location)}</p>`
+        : '';
+      const occupationLine = member.occupation
+        ? `<p class="panel-field"><span class="panel-field-label">Occupation</span>${escapeHtml(member.occupation)}</p>`
+        : '';
+      const bioLine = member.bio
+        ? `<div class="panel-bio"><span class="panel-field-label">About</span><div class="panel-bio-text">${escapeHtml(member.bio)}</div></div>`
+        : '';
+
+      // Family links — group by type
+      const memberRels = RELS.relationships.filter((r: any) =>
+        r.person_a_id === memberId || r.person_b_id === memberId
+      );
+
+      // Separate spouses, parents, children, siblings
+      const spouses = memberRels.filter((r: any) => r.relationship_type === 'spouse');
+      const parents = memberRels.filter((r: any) => r.relationship_type === 'parent_child' && r.person_b_id === memberId);
+      const children = memberRels.filter((r: any) => r.relationship_type === 'parent_child' && r.person_a_id === memberId);
+      const siblings = memberRels.filter((r: any) => r.relationship_type === 'step_sibling');
+
+      function buildRelItems(rels: any[], getOtherId: (rel: any) => string, roleLabel: string, extraBadge?: (rel: any) => string) {
+        if (rels.length === 0) return '';
+        return rels.map((rel: any) => {
+          const otherId = getOtherId(rel);
+          const other = MEMBERS.list.find((m: Member) => m.id === otherId);
+          if (!other) return '';
+          const badge = extraBadge ? extraBadge(rel) : '';
+          return `
+            <button class="family-link" data-member-id="${other.id}">
+              <span class="family-link-avatar">${other.first_name[0]}${other.last_name[0]}</span>
+              <span class="family-link-info">
+                <span class="family-link-name">${other.first_name} ${other.last_name}</span>
+                <span class="family-link-role">${roleLabel}${badge ? ` · ${badge}` : ''}</span>
+              </span>
+            </button>`;
+        }).join('');
+      }
+
+      const spouseSection = spouses.length > 0
+        ? `<div class="panel-rel-group">
+            <p class="panel-rel-group-label">Spouse${spouses.length > 1 ? 's' : ''}</p>
+            <div class="panel-rel-items">${buildRelItems(spouses, (rel) => rel.person_a_id === memberId ? rel.person_b_id : rel.person_a_id, 'Spouse', (rel) => rel.is_primary ? 'Primary' : '')}</div>
+           </div>`
+        : '';
+
+      const parentSection = parents.length > 0
+        ? `<div class="panel-rel-group">
+            <p class="panel-rel-group-label">Parents</p>
+            <div class="panel-rel-items">${buildRelItems(parents, (rel) => rel.person_a_id === memberId ? rel.person_b_id : rel.person_a_id, 'Parent')}</div>
+           </div>`
+        : '';
+
+      const childSection = children.length > 0
+        ? `<div class="panel-rel-group">
+            <p class="panel-rel-group-label">Children</p>
+            <div class="panel-rel-items">${buildRelItems(children, (rel) => rel.person_b_id === memberId ? rel.person_a_id : rel.person_b_id, 'Child')}</div>
+           </div>`
+        : '';
+
+      const siblingSection = siblings.length > 0
+        ? `<div class="panel-rel-group">
+            <p class="panel-rel-group-label">Step-siblings</p>
+            <div class="panel-rel-items">${buildRelItems(siblings, (rel) => rel.person_a_id === memberId ? rel.person_b_id : rel.person_a_id, 'Step-sibling')}</div>
+           </div>`
+        : '';
+
+      const hasFamilyLinks = spouseSection || parentSection || childSection || siblingSection;
+      const familyLinksHtml = hasFamilyLinks
+        ? spouseSection + parentSection + childSection + siblingSection
+        : '<p class="panel-empty">No family links yet</p>';
+
+      panelBody.innerHTML = `
+        <div class="panel-profile-header">
+          <div class="panel-avatar">
+            ${member.profile_photo_url
+              ? `<img src="${member.profile_photo_url}" alt="Profile photo of ${member.first_name} ${member.last_name}" class="panel-photo" />`
+              : `<span class="panel-initials">${member.first_name[0]}${member.last_name[0]}</span>`
+            }
+          </div>
+          <h2 class="panel-name">${member.first_name} ${member.last_name}</h2>
+          ${member.is_root ? '<span class="panel-root-badge">Root ancestor</span>' : ''}
+          <p class="panel-vitals">${vitalText}</p>
+        </div>
+
+        <div class="panel-section">
+          ${locationLine}
+          ${occupationLine}
+        </div>
+
+        ${bioLine}
+
+        <div class="panel-section">
+          <div class="panel-section-header">
+            <h3 class="panel-section-title">Family</h3>
+            ${isAdmin ? `<button class="panel-add-rel-btn" id="panel-add-rel-btn" data-member-id="${memberId}">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+              </svg>
+              Add
+            </button>` : ''}
+          </div>
+          ${familyLinksHtml}
+        </div>
+
+        <div class="panel-section panel-meta">
+          ${member.last_edited_at
+            ? `<p class="panel-edit-info">Last edited ${formatDate(member.last_edited_at)}</p>`
+            : ''}
+          <a href="/tree/${treeId}/members/${memberId}/edit" class="btn btn-outline btn-sm">
+            Edit member
+          </a>
+        </div>
+      `;
+
+      // Family link click delegation
+      panelBody.querySelectorAll('.family-link').forEach(link => {
+        link.addEventListener('click', () => {
+          const id = (link as HTMLElement).dataset.memberId;
+          if (id) openPanel(id);
+        });
+      });
+
+      // Add relationship button in panel
+      const addRelBtn = document.getElementById('panel-add-rel-btn');
+      if (addRelBtn) {
+        addRelBtn.addEventListener('click', () => {
+          const memberIdForRel = addRelBtn.dataset.memberId;
+          if (memberIdForRel) openRelModal(undefined, memberIdForRel);
+        });
+      }
+
+    } catch {
+      panelBody.innerHTML = `
+        <div class="panel-error">
+          <p>Failed to load member details.</p>
+          <button class="btn btn-ghost btn-sm" onclick="window.location.reload()">Retry</button>
+        </div>
+      `;
+    }
+  }
+
+  function closePanel() {
+    panel.hidden = true;
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+    currentMemberId = null;
+    // Deselect tree node
+    selectedNodeId = null;
+    updateTreeSelection();
+  }
+
+  backdrop.addEventListener('click', closePanel);
+  panelClose.addEventListener('click', closePanel);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && currentMemberId) closePanel();
+  });
+
+  // ==============================
+  // Relationship Creation Modal
+  // ==============================
+
+  // Toast helper
+  function showToast(message: string, duration = 3500) {
+    const existing = document.getElementById('app-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.className = 'app-toast';
+    toast.textContent = message;
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 20px;background:var(--color-inverse-surface);color:var(--color-inverse-on-surface);border-radius:9999px;font-size:14px;font-weight:500;z-index:9999;box-shadow:var(--shadow-2);transition:opacity 0.3s;opacity:1;';
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, duration);
+  }
+
+  // Modal state
+  let relStep = 1;
+  let relType: string | null = null;
+  let relPersonA: string | null = null;
+  let relPersonB: string | null = null;
+  let relDragSource: string | null = null;
+
+  const relModal = document.getElementById('rel-modal')!;
+  const relModalBackdrop = document.getElementById('rel-modal-backdrop')!;
+  const relModalClose = document.getElementById('rel-modal-close')!;
+  const relNextBtn = document.getElementById('rel-next-btn') as HTMLButtonElement;
+  const relBackBtn = document.getElementById('rel-back-btn') as HTMLButtonElement;
+  const relCreateBtn = document.getElementById('rel-create-btn') as HTMLButtonElement;
+  const relError = document.getElementById('rel-error')!;
+  const openRelModalBtn = document.getElementById('open-rel-modal-btn') as HTMLButtonElement;
+
+  function resetRelModal() {
+    relStep = 1;
+    relType = null;
+    relPersonA = null;
+    relPersonB = null;
+    relDragSource = null;
+    relError.hidden = true;
+    updateRelStepUI();
+    // Reset type selection
+    document.querySelectorAll('.rel-type-btn').forEach(b => b.classList.remove('selected'));
+    // Clear person selections
+    relPersonA = null;
+    relPersonB = null;
+    // Reset form fields
+    (document.getElementById('marriage-date') as HTMLInputElement).value = '';
+    (document.getElementById('is-primary-check') as HTMLInputElement).checked = false;
+    (document.getElementById('end-relationship-check') as HTMLInputElement).checked = false;
+    (document.getElementById('divorce-date') as HTMLInputElement).value = '';
+    (document.getElementById('ended-reason') as HTMLSelectElement).value = '';
+    (document.getElementById('is-adopted-check') as HTMLInputElement).checked = false;
+    document.getElementById('ended-details')!.hidden = true;
+  }
+
+  function openRelModal(preselectedType?: string, preselectedPersonA?: string) {
+    resetRelModal();
+    relModal.hidden = false;
+    relNextBtn.hidden = false;
+    relBackBtn.hidden = true;
+    relCreateBtn.hidden = true;
+    if (preselectedType) {
+      relType = preselectedType;
+      document.querySelector(`.rel-type-btn[data-type="${preselectedType}"]`)?.classList.add('selected');
+      goToRelStep(2);
+    }
+    if (preselectedPersonA) {
+      relPersonA = preselectedPersonA;
+    }
+  }
+
+  function closeRelModal() {
+    relModal.hidden = true;
+    resetRelModal();
+  }
+
+  function goToRelStep(step: number) {
+    relStep = step;
+    updateRelStepUI();
+  }
+
+  function updateRelStepUI() {
+    // Hide all steps
+    for (let i = 1; i <= 4; i++) {
+      const stepEl = document.getElementById(`rel-step-${i}`);
+      if (stepEl) stepEl.hidden = i !== relStep;
+    }
+
+    // Update step indicator
+    document.querySelectorAll('.rel-step').forEach(el => {
+      const stepNum = parseInt(el.dataset.step ?? '0');
+      el.classList.toggle('active', stepNum === relStep);
+    });
+
+    // Step-specific content population
+    if (relStep === 2) {
+      populatePersonList('rel-person-a-list', relPersonA);
+    } else if (relStep === 3) {
+      populatePersonList('rel-person-b-list', relPersonB);
+    } else if (relStep === 4) {
+      updateDetailsSection();
+    }
+
+    // Button visibility
+    relBackBtn.hidden = relStep <= 2;
+    relNextBtn.hidden = relStep >= 3;
+    relCreateBtn.hidden = relStep !== 4;
+    relNextBtn.disabled = !canProceed();
+    relError.hidden = true;
+  }
+
+  function canProceed(): boolean {
+    if (relStep === 2) return !!relPersonA;
+    if (relStep === 3) return !!relPersonB;
+    return true;
+  }
+
+  function populatePersonList(listId: string, selectedId: string | null) {
+    const listEl = document.getElementById(listId)!;
+    const excludeId = listId === 'rel-person-b-list' ? relPersonA : null;
+    const selected = listId === 'rel-person-a-list' ? relPersonA : relPersonB;
+
+    listEl.innerHTML = MEMBERS.list.map((m: Member) => {
+      const isDisabled = excludeId === m.id;
+      const isSelected = selected === m.id;
+      const dates = m.birth_date
+        ? `b. ${new Date(m.birth_date).getFullYear()}`
+        : '';
+      return `
+        <button type="button" class="rel-person-item ${isDisabled ? 'disabled' : ''} ${isSelected ? 'selected' : ''}"
+          data-member-id="${m.id}" ${isDisabled ? 'disabled' : ''}>
+          <div class="rel-person-avatar">${m.first_name[0]}${m.last_name[0]}</div>
+          <div class="rel-person-info">
+            <div class="rel-person-name">${m.first_name} ${m.last_name}</div>
+            ${dates ? `<div class="rel-person-dates">${dates}</div>` : ''}
+          </div>
+        </button>
+      `;
+    }).join('');
+
+    listEl.querySelectorAll('.rel-person-item:not(.disabled)').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.memberId!;
+        if (listId === 'rel-person-a-list') {
+          relPersonA = id;
+        } else {
+          relPersonB = id;
+        }
+        updateRelStepUI();
+      });
+    });
+  }
+
+  function updateDetailsSection() {
+    const spouseDetails = document.getElementById('spouse-details')!;
+    const parentChildDetails = document.getElementById('parent-child-details')!;
+    const isPrimaryWrap = document.getElementById('is-primary-wrap')!;
+
+    spouseDetails.hidden = relType !== 'spouse';
+    parentChildDetails.hidden = relType !== 'parent_child';
+
+    // For spouse: check if there's already a primary spouse for personA
+    if (relType === 'spouse' && relPersonA) {
+      const existingPrimary = RELS.relationships.find((r: any) =>
+        r.relationship_type === 'spouse' &&
+        (r.person_a_id === relPersonA || r.person_b_id === relPersonA) &&
+        r.is_primary === true
+      );
+      isPrimaryWrap.hidden = !existingPrimary;
+    }
+
+    // End relationship toggle
+    const endCheck = document.getElementById('end-relationship-check') as HTMLInputElement;
+    const endedDetails = document.getElementById('ended-details')!;
+    endCheck.onchange = () => { endedDetails.hidden = !endCheck.checked; };
+    endedDetails.hidden = true;
+    endCheck.checked = false;
+  }
+
+  // Event listeners
+  if (openRelModalBtn) {
+    openRelModalBtn.addEventListener('click', () => openRelModal());
+  }
+  relModalBackdrop.addEventListener('click', closeRelModal);
+  relModalClose.addEventListener('click', closeRelModal);
+
+  relNextBtn.addEventListener('click', () => {
+    if (relStep === 1 && relType) goToRelStep(2);
+    else if (relStep === 2) goToRelStep(3);
+    else if (relStep === 3) goToRelStep(4);
+  });
+
+  relBackBtn.addEventListener('click', () => {
+    if (relStep > 1) goToRelStep(relStep - 1);
+  });
+
+  // Type buttons
+  document.querySelectorAll('.rel-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rel-type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      relType = (btn as HTMLElement).dataset.type!;
+      relNextBtn.disabled = false;
+    });
+  });
+
+  relCreateBtn.addEventListener('click', async () => {
+    relCreateBtn.disabled = true;
+    relError.hidden = true;
+
+    const payload: Record<string, any> = {
+      relationship_type: relType,
+      person_a_id: relPersonA,
+      person_b_id: relPersonB,
+    };
+
+    if (relType === 'spouse') {
+      const marriageDate = (document.getElementById('marriage-date') as HTMLInputElement).value;
+      if (marriageDate) payload.marriage_date = marriageDate;
+
+      const isPrimaryCheck = (document.getElementById('is-primary-check') as HTMLInputElement).checked;
+      if (isPrimaryCheck) payload.is_primary = true;
+
+      const endCheck = (document.getElementById('end-relationship-check') as HTMLInputElement).checked;
+      if (endCheck) {
+        payload.ended_reason = (document.getElementById('ended-reason') as HTMLSelectElement).value || null;
+        payload.divorce_date = (document.getElementById('divorce-date') as HTMLInputElement).value || null;
+      }
+    }
+
+    if (relType === 'parent_child') {
+      const adoptedCheck = (document.getElementById('is-adopted-check') as HTMLInputElement).checked;
+      if (adoptedCheck) payload.is_adopted = true;
+    }
+
+    try {
+      const res = await fetch(`/api/trees/${treeId}/relationships`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        relError.textContent = data.error || 'Failed to add relationship';
+        relError.hidden = false;
+      } else {
+        RELS.relationships.push(data);
+        showToast('Relationship added');
+        closeRelModal();
+        // Refresh panel if open
+        if (currentMemberId) openPanel(currentMemberId);
+      }
+    } catch {
+      relError.textContent = 'Failed to add relationship. Please try again.';
+      relError.hidden = false;
+    } finally {
+      relCreateBtn.disabled = false;
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !relModal.hidden) closeRelModal();
+  });
+
+  // ==========================================================
+  // D3 Tree Visualization
+  // ==========================================================
+
+  // Check for D3 container
+  const svgWrapper = document.getElementById('tree-svg-wrapper');
+
+  // Initialize data and tree
+  async function init() {
+    await updateTreeInfo();
+    await fetchGraph();
+    if (svgWrapper) {
+      initTreeVisualization();
+    }
+  }
+  init();
+
+
+  async function initTreeVisualization() {
+    const svg = d3.select('#tree-svg');
+    const wrapper = svgWrapper!;
+
+    // Build graph data
+    interface GraphNode extends d3.SimulationNodeDatum {
+      id: string;
+      first_name: string;
+      last_name: string;
+      birth_date: string | null;
+      death_date: string | null;
+      profile_photo_url: string | null;
+      is_root: boolean;
+      gender: string | null;
+      _children?: GraphNode[];
+      _collapsed?: boolean;
+      _childCount?: number;
+    }
+
+    interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
+      relationship_type: string;
+      is_primary?: boolean;
+    }
+
+    const nodes: GraphNode[] = MEMBERS.list.map(m => ({
+      id: m.id,
+      first_name: m.first_name,
+      last_name: m.last_name,
+      birth_date: m.birth_date,
+      death_date: m.death_date,
+      profile_photo_url: m.profile_photo_url,
+      is_root: m.is_root,
+      gender: m.gender,
+    }));
+
+    const links: GraphLink[] = RELS.relationships.map(r => ({
+      source: r.person_a_id,
+      target: r.person_b_id,
+      relationship_type: r.relationship_type,
+      is_primary: r.is_primary,
+    }));
+
+    // Build parent-child hierarchy
+    // For each node, find children (person_a is parent of person_b in parent_child rel)
+    const childrenByParent = new Map<string, string[]>();
+    const parentByChild = new Map<string, string>();
+    const spousePairs = new Set<string>();
+
+    RELS.relationships.forEach(r => {
+      if (r.relationship_type === 'parent_child') {
+        const existing = childrenByParent.get(r.person_a_id) || [];
+        existing.push(r.person_b_id);
+        childrenByParent.set(r.person_a_id, existing);
+        parentByChild.set(r.person_b_id, r.person_a_id);
+      } else if (r.relationship_type === 'spouse') {
+        // Store as unordered pair
+        const pair = [r.person_a_id, r.person_b_id].sort().join('|');
+        spousePairs.add(pair);
+      }
+    });
+
+    // Build hierarchy tree from root
+    function buildHierarchy(rootId: string | null): GraphNode | null {
+      if (!rootId) {
+        // Find a root member
+        const rootNode = nodes.find(n => n.is_root);
+        if (!rootNode && nodes.length > 0) {
+          // Use first member as root
+          return buildTree(nodes[0].id);
+        }
+        return rootNode ? buildTree(rootId) : null;
+      }
+      return buildTree(rootId);
+    }
+
+    function buildTree(rootId: string): GraphNode | null {
+      const root = nodes.find(n => n.id === rootId);
+      if (!root) return null;
+
+      function attach(node: GraphNode): GraphNode {
+        const childIds = childrenByParent.get(node.id) || [];
+        const children = childIds
+          .map(id => nodes.find(n => n.id === id))
+          .filter(Boolean) as GraphNode[];
+        if (children.length > 0) {
+          node._children = children.map(c => attach(c));
+          node._childCount = countDescendants(node);
+        }
+        return node;
+      }
+
+      return attach(root);
+    }
+
+    function countDescendants(node: GraphNode): number {
+      if (!node._children || node._children.length === 0) return 0;
+      return node._children.length + node._children.reduce((sum, c) => sum + countDescendants(c), 0);
+    }
+
+    function buildSubtree(rootId: string): GraphNode | null {
+      const root = nodes.find(n => n.id === rootId);
+      if (!root) return null;
+
+      function attach(node: GraphNode): GraphNode {
+        const childIds = childrenByParent.get(node.id) || [];
+        const children = childIds
+          .map(id => nodes.find(n => n.id === id))
+          .filter(Boolean) as GraphNode[];
+        if (children.length > 0) {
+          node._children = children.map(c => attach(c));
+          node._childCount = countDescendants(node);
+        }
+        return node;
+      }
+
+      return attach({ ...root });
+    }
+
+    // Get initial root from tree root_person_id
+    let hierarchyRoot = buildHierarchy(TREE.rootId);
+
+    // If still no root, use first node
+    if (!hierarchyRoot && nodes.length > 0) {
+      hierarchyRoot = buildTree(nodes[0].id);
+    }
+
+    // Tree dimensions
+    const NODE_R = 28;
+    const LINK_DIST = 110;
+
+    // Setup SVG with zoom/pan
+    const width = wrapper.clientWidth;
+    const height = wrapper.clientHeight;
+
+    svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+    const g = svg.append('g').attr('class', 'tree-g');
+
+    // Zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.15, 3])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+        currentZoom = event.transform.k;
+      });
+
+    svg.call(zoom);
+    svg.on('dblclick.zoom', null); // Disable double-click zoom
+
+    let currentZoom = 1;
+
+    // Pan is handled by zoom's built-in drag behavior on the SVG
+    svg.style('cursor', 'grab');
+
+    let selectedNodeId: string | null = null;
+    let deepLinkTimeout: ReturnType<typeof setTimeout> | null = null;
+    let filteredRootId: string | null = null;
+    let allNodes: GraphNode[] = [];
+
+    function updateTreeSelection() {
+      g.selectAll('.tree-node-group').each(function(d: any) {
+        const el = d3.select(this);
+        const isSelected = d.id === selectedNodeId;
+        el.classed('selected', isSelected);
+        el.select('.tree-node-ring')
+          .attr('stroke-width', isSelected ? 3 : (d.is_root ? 2.5 : 0));
+      });
+    }
+
+    // Render tree
+    function renderTree(rootNode: GraphNode) {
+      g.selectAll('*').remove();
+
+      // Create radial tree layout
+      const treeLayout = d3.tree<GraphNode>()
+        .nodeSize([NODE_R * 2.5, NODE_R * 3])
+        .separation((a, b) => a.parent === b.parent ? 1.2 : 1.8);
+
+      // Convert hierarchy to d3 hierarchy
+      const d3Root = d3.hierarchy(rootNode, (d) => {
+        if (d._collapsed) return [];
+        return d._children || [];
+      });
+
+      const treeData = treeLayout(d3Root);
+      const linkData = treeData.links();
+      const nodeData = treeData.descendants();
+
+      // Center the tree
+      const cx = width / 2;
+      const cy = height / 2;
+
+      // Update positions to be centered
+      nodeData.forEach(d => {
+        d.x = cx;
+        d.y = cy;
+      });
+
+      // Create force simulation for radial layout
+      const simulation = d3.forceSimulation<GraphNode>(nodeData)
+        .force('link', d3.forceLink<GraphNode, d3.HierarchyLink<GraphNode>>(linkData)
+          .id(d => d.id)
+          .distance(LINK_DIST)
+          .strength(0.8))
+        .force('charge', d3.forceManyBody().strength(-200))
+        .force('center', d3.forceCenter(cx, cy))
+        .force('collision', d3.forceCollide(NODE_R * 2))
+        .alpha(0.5)
+        .alphaDecay(0.02);
+
+      // Draw links first (excluding spouse links - those are drawn separately)
+      const linkGroup = g.append('g').attr('class', 'links');
+
+      // Filter out spouse links - they are drawn with curves in spouse group
+      const treeOnlyLinks = linkData.filter(d => {
+        const rel = RELS.relationships.find(r =>
+          (r.person_a_id === (d.source as GraphNode).id && r.person_b_id === (d.target as GraphNode).id) ||
+          (r.person_a_id === (d.target as GraphNode).id && r.person_b_id === (d.source as GraphNode).id)
+        );
+        return rel?.relationship_type !== 'spouse';
+      });
+
+      linkGroup.selectAll('.tree-link')
+        .data(treeOnlyLinks)
+        .join('line')
+        .attr('class', 'tree-link')
+        .attr('x1', d => (d.source as d3.SimulationNodeDatum).x!)
+        .attr('y1', d => (d.source as d3.SimulationNodeDatum).y!)
+        .attr('x2', d => (d.target as d3.SimulationNodeDatum).x!)
+        .attr('y2', d => (d.target as d3.SimulationNodeDatum).y!);
+
+      // Draw nodes
+      const nodeGroup = g.append('g').attr('class', 'nodes');
+
+      const nodeGs = nodeGroup.selectAll('.tree-node-group')
+        .data(nodeData, (d: any) => d.data.id)
+        .join('g')
+        .attr('class', d => {
+          let cls = 'tree-node-group';
+          if (d.data.is_root) cls += ' tree-node-root';
+          return cls;
+        })
+        .attr('transform', d => `translate(${d.x},${d.y})`)
+        .style('cursor', 'pointer');
+
+      // Avatar circle
+      nodeGs.append('circle')
+        .attr('class', 'tree-node-avatar')
+        .attr('r', NODE_R)
+        .attr('fill', d => {
+          if (d.data.profile_photo_url) return 'var(--color-surface-container-lowest)';
+          const gender = d.data.gender;
+          if (gender === 'male') return 'var(--color-primary-fixed-dim)';
+          if (gender === 'female') return 'var(--color-secondary-fixed-dim)';
+          return 'var(--color-tertiary-fixed-dim)';
+        })
+        .attr('stroke', d => d.data.is_root ? 'var(--color-secondary)' : 'none')
+        .attr('stroke-width', d => d.data.is_root ? 2.5 : 0)
+        .attr('stroke-dasharray', d => d.data.is_root ? '4 2' : '');
+
+      // Selection ring
+      nodeGs.append('circle')
+        .attr('class', 'tree-node-ring')
+        .attr('r', NODE_R + 4)
+        .attr('fill', 'none')
+        .attr('stroke', 'var(--color-primary)')
+        .attr('stroke-width', 0);
+
+      // Photo or initials
+      nodeGs.each(function(d: d3.HierarchyPointNode<GraphNode>) {
+        const node = d3.select(this);
+        if (d.data.profile_photo_url) {
+          // Clip path for photo
+          const clipId = `clip-${d.data.id}`;
+          node.append('clipPath')
+            .attr('id', clipId)
+            .append('circle')
+            .attr('r', NODE_R - 2);
+
+          node.append('image')
+            .attr('href', d.data.profile_photo_url)
+            .attr('x', -NODE_R + 2)
+            .attr('y', -NODE_R + 2)
+            .attr('width', (NODE_R - 2) * 2)
+            .attr('height', (NODE_R - 2) * 2)
+            .attr('clip-path', `url(#${clipId})`)
+            .attr('preserveAspectRatio', 'xMidYMid slice');
+        } else {
+          node.append('text')
+            .attr('class', 'tree-node-initials')
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .text(`${d.data.first_name[0]}${d.data.last_name[0]}`);
+        }
+      });
+
+      // Name label
+      nodeGs.append('text')
+        .attr('class', 'tree-node-name')
+        .attr('text-anchor', 'middle')
+        .attr('y', NODE_R + 14)
+        .text(d => `${d.data.first_name} ${d.data.last_name[0]}.`);
+
+      // Dates label (if has dates)
+      nodeGs.filter(d => d.data.birth_date || d.data.death_date)
+        .append('text')
+        .attr('class', 'tree-node-dates')
+        .attr('text-anchor', 'middle')
+        .attr('y', NODE_R + 26)
+        .text(d => {
+          const parts: string[] = [];
+          if (d.data.birth_date) parts.push(new Date(d.data.birth_date).getFullYear().toString());
+          if (d.data.death_date) parts.push(new Date(d.data.death_date).getFullYear().toString());
+          return parts.join('–');
+        });
+
+      // Collapse/expand button (if has children)
+      nodeGs.filter(d => (d.data._children && d.data._children.length > 0) || d.data._collapsed)
+        .append('g')
+        .attr('class', 'tree-collapse-g')
+        .attr('transform', `translate(${NODE_R + 8}, ${-NODE_R - 8})`)
+        .each(function(d: d3.HierarchyPointNode<GraphNode>) {
+          const btn = d3.select(this);
+          btn.append('circle')
+            .attr('r', 10)
+            .attr('fill', 'var(--color-surface-container-lowest)')
+            .attr('stroke', 'var(--color-outline-variant)')
+            .attr('stroke-width', 1.5);
+          btn.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('font-size', '10px')
+            .attr('fill', 'var(--color-on-surface-variant)')
+            .text(d.data._collapsed ? `+${d.data._childCount}` : '−');
+        })
+        .on('click', (event, d: d3.HierarchyPointNode<GraphNode>) => {
+          event.stopPropagation();
+          toggleCollapse(d.data.id);
+        });
+
+      // Spouse links (draw as curved lines separately)
+      const spouseGroup = g.append('g').attr('class', 'spouse-links');
+      const spouseSet = new Set<string>();
+      const spousePaths: { src: d3.HierarchyPointNode<GraphNode>; tgt: d3.HierarchyPointNode<GraphNode> }[] = [];
+
+      RELS.relationships.forEach(r => {
+        if (r.relationship_type === 'spouse') {
+          const pair = [r.person_a_id, r.person_b_id].sort().join('|');
+          if (!spouseSet.has(pair)) {
+            spouseSet.add(pair);
+            const src = nodeData.find(n => n.data.id === r.person_a_id);
+            const tgt = nodeData.find(n => n.data.id === r.person_b_id);
+            if (src && tgt) {
+              spousePaths.push({ src, tgt });
+              const mx = ((src.x || 0) + (tgt.x || 0)) / 2;
+              const my = ((src.y || 0) + (tgt.y || 0)) / 2 - 40; // Curve upward
+              spouseGroup.append('path')
+                .attr('class', 'tree-link tree-link-spouse')
+                .attr('d', `M ${src.x} ${src.y} Q ${mx} ${my} ${tgt.x} ${tgt.y}`);
+            }
+          }
+        }
+      });
+
+      // Simulation tick
+      simulation.on('tick', () => {
+        linkGroup.selectAll('.tree-link')
+          .attr('x1', d => (d.source as d3.SimulationNodeDatum).x!)
+          .attr('y1', d => (d.source as d3.SimulationNodeDatum).y!)
+          .attr('x2', d => (d.target as d3.SimulationNodeDatum).x!)
+          .attr('y2', d => (d.target as d3.SimulationNodeDatum).y!);
+
+        nodeGs.attr('transform', d => `translate(${d.x},${d.y})`);
+
+        // Update spouse link paths
+        spouseGroup.selectAll('.tree-link-spouse')
+          .each(function(_, i) {
+            const { src, tgt } = spousePaths[i];
+            const mx = ((src.x || 0) + (tgt.x || 0)) / 2;
+            const my = ((src.y || 0) + (tgt.y || 0)) / 2 - 40;
+            d3.select(this).attr('d', `M ${src.x} ${src.y} Q ${mx} ${my} ${tgt.x} ${tgt.y}`);
+          });
+      });
+
+      // Node click → open panel
+      nodeGs.on('click', (event, d: d3.HierarchyPointNode<GraphNode>) => {
+        event.stopPropagation();
+        selectedNodeId = d.data.id;
+        updateTreeSelection();
+        enableFilterBtn(selectedNodeId);
+        openPanel(d.data.id);
+        centerOnNode(d.data.id);
+        updateBreadcrumb(d.data.id);
+        // Update URL hash for deep linking
+        history.replaceState(null, '', `#person-${d.data.id}`);
+      });
+
+      // Force layout for non-hierarchy members (members not in tree)
+      // Add orphan nodes
+      const orphanNodes = nodes.filter(n => {
+        return !nodeData.some(d => d.data.id === n.id);
+      });
+
+      if (orphanNodes.length > 0) {
+        // Position orphans in a ring around center
+        const orphanRadius = Math.min(width, height) * 0.35;
+        orphanNodes.forEach((n, i) => {
+          const angle = (i / orphanNodes.length) * 2 * Math.PI - Math.PI / 2;
+          n.x = cx + orphanRadius * Math.cos(angle);
+          n.y = cy + orphanRadius * Math.sin(angle);
+        });
+
+        // Add orphan nodes to simulation
+        const allNodes = [...nodeData.map(d => d as GraphNode), ...orphanNodes];
+        const orphanLinks = links.filter(l => {
+          return orphanNodes.some(on => on.id === (typeof l.source === 'string' ? l.source : l.source.id)) ||
+                 orphanNodes.some(on => on.id === (typeof l.target === 'string' ? l.target : l.target.id));
+        });
+
+        const orphanSim = d3.forceSimulation<GraphNode>(allNodes)
+          .force('link', d3.forceLink<GraphNode, GraphLink>(orphanLinks)
+            .id(d => d.id)
+            .distance(LINK_DIST)
+            .strength(0.3))
+          .force('charge', d3.forceManyBody().strength(-100))
+          .force('center', d3.forceCenter(cx, cy))
+          .alpha(0.3)
+          .alphaDecay(0.02);
+
+        orphanSim.on('tick', () => {
+          nodeGs.attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+      }
+
+      // Zoom controls
+      const zoomInBtn = document.getElementById('zoom-in-btn');
+      const zoomOutBtn = document.getElementById('zoom-out-btn');
+      const zoomResetBtn = document.getElementById('zoom-reset-btn');
+
+      if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => {
+          svg.transition().duration(300).call(zoom.scaleBy, 1.4);
+        });
+      }
+      if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => {
+          svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+        });
+      }
+      if (zoomResetBtn) {
+        zoomResetBtn.addEventListener('click', () => {
+          svg.transition().duration(400).call(
+            zoom.transform,
+            d3.zoomIdentity.translate(width / 2, height / 2).scale(1).translate(-width / 2, -height / 2)
+          );
+        });
+      }
+
+      // Scroll wheel zoom
+      svg.on('wheel', (event) => {
+        event.preventDefault();
+        const delta = event.deltaY > 0 ? 0.85 : 1.15;
+        svg.transition().duration(200).call(zoom.scaleBy, delta);
+      });
+
+      // Mobile pinch zoom
+      let lastPinchDist = 0;
+      svg.node().addEventListener('touchmove', (event) => {
+        if (event.touches.length === 2) {
+          const dx = event.touches[0].clientX - event.touches[1].clientX;
+          const dy = event.touches[0].clientY - event.touches[1].clientY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (lastPinchDist > 0) {
+            const scale = dist / lastPinchDist;
+            svg.call(zoom.scaleBy, scale);
+          }
+          lastPinchDist = dist;
+          event.preventDefault();
+        }
+      }, { passive: false });
+
+      svg.node().addEventListener('touchend', () => {
+        lastPinchDist = 0;
+      });
+
+      // Collapse all button
+      const collapseAllBtn = document.getElementById('collapse-all-btn');
+      if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', () => {
+          nodeGs.filter(d => (d.data._children && d.data._children.length > 0))
+            .each(function(d: any) {
+              d.data._collapsed = true;
+            });
+          renderTree(rootNode);
+        });
+      }
+
+      // Branch filter buttons
+      const filterBranchBtn = document.getElementById('filter-branch-btn') as HTMLButtonElement;
+      const clearFilterBtn = document.getElementById('clear-filter-btn') as HTMLButtonElement;
+
+      function enableFilterBtn(nodeId: string | null) {
+        if (filterBranchBtn) {
+          filterBranchBtn.disabled = !nodeId;
+        }
+      }
+
+      function showClearFilterBtn() {
+        if (clearFilterBtn) clearFilterBtn.hidden = false;
+      }
+
+      function hideClearFilterBtn() {
+        if (clearFilterBtn) clearFilterBtn.hidden = true;
+      }
+
+      filterBranchBtn?.addEventListener('click', () => {
+        if (selectedNodeId) {
+          filteredRootId = selectedNodeId;
+          showClearFilterBtn();
+          // Re-render tree from selected node as root
+          const filterRoot = nodes.find(n => n.id === selectedNodeId);
+          if (filterRoot) {
+            const filteredHierarchy = buildSubtree(selectedNodeId);
+            if (filteredHierarchy) {
+              renderTree(filteredHierarchy);
+            }
+          }
+        }
+      });
+
+      clearFilterBtn?.addEventListener('click', () => {
+        filteredRootId = null;
+        hideClearFilterBtn();
+        // Re-render full tree
+        if (hierarchyRoot) {
+          renderTree(hierarchyRoot);
+        }
+      });
+
+      // Click on background to deselect
+      svg.on('click', (event) => {
+        if (event.target === svg.node()) {
+          selectedNodeId = null;
+          updateTreeSelection();
+          updateBreadcrumb(null);
+          history.replaceState(null, '', window.location.pathname);
+        }
+      });
+
+      // Deep link: check hash on load
+      const hash = window.location.hash;
+      if (hash.startsWith('#person-')) {
+        const personId = hash.replace('#person-', '');
+        if (deepLinkTimeout) clearTimeout(deepLinkTimeout);
+        deepLinkTimeout = setTimeout(() => {
+          selectedNodeId = personId;
+          updateTreeSelection();
+          centerOnNode(personId);
+          updateBreadcrumb(personId);
+          openPanel(personId);
+        }, 800);
+      }
+
+      // Toggle collapse helper
+      window.toggleCollapse = function(nodeId: string) {
+        const node = nodeData.find(d => d.data.id === nodeId);
+        if (node) {
+          node.data._collapsed = !node.data._collapsed;
+          renderTree(rootNode);
+        }
+      };
+
+      // Center on node
+      function centerOnNode(nodeId: string) {
+        const node = nodeData.find(d => d.data.id === nodeId);
+        if (!node) return;
+
+        const targetX = width / 2;
+        const targetY = height / 2;
+        const nodeX = node.x!;
+        const nodeY = node.y!;
+
+        const transform = d3.zoomIdentity
+          .translate(targetX - nodeX, targetY - nodeY)
+          .scale(currentZoom > 0.5 ? currentZoom : 1);
+
+        svg.transition().duration(500).call(zoom.transform, transform);
+      }
+
+      // Update breadcrumb
+      function getAncestors(nodeId: string): GraphNode[] {
+        const ancestors: GraphNode[] = [];
+        let current = nodeData.find(d => d.data.id === nodeId);
+        while (current && current.parent) {
+          ancestors.unshift(current.parent.data);
+          current = current.parent;
+        }
+        return ancestors;
+      }
+
+      function updateBreadcrumb(nodeId: string | null) {
+        const breadcrumb = document.getElementById('tree-breadcrumb');
+        const breadcrumbList = document.getElementById('breadcrumb-list');
+        if (!breadcrumb || !breadcrumbList) return;
+
+        if (!nodeId) {
+          breadcrumb.hidden = true;
+          return;
+        }
+
+        breadcrumb.hidden = false;
+        const ancestors = getAncestors(nodeId);
+        const current = nodeData.find(d => d.data.id === nodeId)?.data;
+        const path = [...ancestors, current].filter(Boolean) as GraphNode[];
+
+        breadcrumbList.innerHTML = path.map((n, i) => {
+          const isLast = i === path.length - 1;
+          return `
+            <li class="breadcrumb-item">
+              <button class="breadcrumb-link ${isLast ? 'active' : ''}"
+                      data-member-id="${n.id}"
+                      type="button">
+                <span class="breadcrumb-avatar">${n.first_name[0]}${n.last_name[0]}</span>
+                <span>${n.first_name}</span>
+              </button>
+              ${!isLast ? '<span class="breadcrumb-sep" aria-hidden="true">›</span>' : ''}
+            </li>
+          `;
+        }).join('');
+
+        breadcrumbList.querySelectorAll('.breadcrumb-link').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = (btn as HTMLElement).dataset.memberId;
+            if (id) {
+              selectedNodeId = id;
+              updateTreeSelection();
+              centerOnNode(id);
+              updateBreadcrumb(id);
+              openPanel(id);
+              history.replaceState(null, '', `#person-${id}`);
+            }
+          });
+        });
+      }
+
+      // Initial breadcrumb
+      updateBreadcrumb(hierarchyRoot?.id || null);
+
+      // Resize handler
+      const resizeObserver = new ResizeObserver(() => {
+        const w = wrapper.clientWidth;
+        const h = wrapper.clientHeight;
+        svg.attr('viewBox', `0 0 ${w} ${h}`);
+        simulation.force('center', d3.forceCenter(w / 2, h / 2));
+        simulation.alpha(0.1).restart();
+      });
+      resizeObserver.observe(wrapper);
+
+      // Keyboard navigation
+      let keyboardNodeIndex = -1;
+      let focusedNodeId: string | null = null;
+
+      function focusNode(nodeId: string | null) {
+        focusedNodeId = nodeId;
+        if (!nodeId) {
+          keyboardNodeIndex = -1;
+          svg.node()?.blur();
+          return;
+        }
+        keyboardNodeIndex = nodeData.findIndex(d => d.data.id === nodeId);
+        if (keyboardNodeIndex >= 0) {
+          selectedNodeId = nodeId;
+          updateTreeSelection();
+          enableFilterBtn(nodeId);
+          centerOnNode(nodeId);
+          updateBreadcrumb(nodeId);
+          history.replaceState(null, '', `#person-${nodeId}`);
+        }
+      }
+
+      function getAdjacentNode(direction: 'up' | 'down' | 'left' | 'right'): string | null {
+        if (nodeData.length === 0) return null;
+        if (keyboardNodeIndex < 0 || keyboardNodeIndex >= nodeData.length) {
+          return nodeData[0].data.id;
+        }
+        const current = nodeData[keyboardNodeIndex];
+        const cx = current.x || 0;
+        const cy = current.y || 0;
+
+        // Find nearest node in direction
+        let best: d3.HierarchyPointNode<GraphNode> | null = null;
+        let bestDist = Infinity;
+
+        nodeData.forEach((d, i) => {
+          if (i === keyboardNodeIndex) return;
+          const dx = (d.x || 0) - cx;
+          const dy = (d.y || 0) - cy;
+          let valid = false;
+          let score = Infinity;
+
+          if (direction === 'right' && dx > 20) { valid = true; score = Math.abs(dy) + dx * 0.5; }
+          else if (direction === 'left' && dx < -20) { valid = true; score = Math.abs(dy) + Math.abs(dx) * 0.5; }
+          else if (direction === 'down' && dy > 20) { valid = true; score = Math.abs(dx) + dy * 0.5; }
+          else if (direction === 'up' && dy < -20) { valid = true; score = Math.abs(dx) + Math.abs(dy) * 0.5; }
+
+          if (valid && score < bestDist) {
+            bestDist = score;
+            best = d;
+          }
+        });
+
+        return best?.data.id || null;
+      }
+
+      document.addEventListener('keydown', (e) => {
+        // Only handle when SVG wrapper is focused or no other input is focused
+        const activeTag = document.activeElement?.tagName;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag || '')) return;
+
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const dir = e.key === 'ArrowRight' ? 'right' : e.key === 'ArrowLeft' ? 'left' : e.key === 'ArrowDown' ? 'down' : 'up';
+          const nextId = getAdjacentNode(dir);
+          if (nextId) focusNode(nextId);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          if (focusedNodeId) {
+            e.preventDefault();
+            openPanel(focusedNodeId);
+          }
+        } else if (e.key === 'Escape') {
+          if (currentMemberId) {
+            closePanel();
+          } else if (focusedNodeId) {
+            focusNode(null);
+            selectedNodeId = null;
+            updateTreeSelection();
+            updateBreadcrumb(null);
+            history.replaceState(null, '', window.location.pathname);
+          }
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          if (nodeData.length > 0) focusNode(nodeData[0].data.id);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          if (nodeData.length > 0) focusNode(nodeData[nodeData.length - 1].data.id);
+        }
+      });
+
+      // Focus SVG wrapper when clicking on canvas
+      svgWrapper.addEventListener('click', () => {
+        if (focusedNodeId === null && selectedNodeId === null) {
+          svgWrapper.focus();
+        }
+      });
+
+      // Make SVG wrapper focusable for keyboard nav
+      svgWrapper.addEventListener('focus', () => {
+        if (!focusedNodeId && !selectedNodeId && nodeData.length > 0) {
+          // Auto-focus first node when tabbing to canvas
+        }
+      });
+
+      // Hide loading
+      const loading = document.getElementById('tree-loading');
+      if (loading) loading.hidden = true;
+    }
+
+    // Start rendering
+    if (hierarchyRoot) {
+      renderTree(hierarchyRoot);
+    } else if (nodes.length > 0) {
+      // No hierarchy - show all nodes in force layout
+      renderFlatLayout();
+    }
+
+    function renderFlatLayout() {
+      const svg = d3.select('#tree-svg');
+      const g = svg.select('.tree-g') || svg.append('g');
+      const w = wrapper.clientWidth;
+      const h = wrapper.clientHeight;
+
+      svg.attr('viewBox', `0 0 ${w} ${h}`);
+
+      const zoom = d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.15, 3])
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
+
+      svg.call(zoom);
+
+      // Simple force layout for flat view
+      interface FlatNode extends d3.SimulationNodeDatum {
+        id: string;
+        first_name: string;
+        last_name: string;
+        birth_date: string | null;
+        death_date: string | null;
+        profile_photo_url: string | null;
+        is_root: boolean;
+        gender: string | null;
+      }
+
+      const flatNodes: FlatNode[] = nodes.map(n => ({ ...n }));
+      const flatLinks = links.map(l => ({
+        source: typeof l.source === 'string' ? l.source : l.source.id,
+        target: typeof l.target === 'string' ? l.target : l.target.id,
+        relationship_type: l.relationship_type,
+      }));
+
+      const sim = d3.forceSimulation<FlatNode>(flatNodes)
+        .force('link', d3.forceLink(flatLinks).id((d: any) => d.id).distance(120).strength(0.5))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(w / 2, h / 2))
+        .force('collision', d3.forceCollide(50));
+
+      const linkG = g.append('g').attr('class', 'flat-links');
+      const nodeG = g.append('g').attr('class', 'flat-nodes');
+
+      const linkEls = linkG.selectAll('.tree-link')
+        .data(flatLinks)
+        .join('line')
+        .attr('class', 'tree-link')
+        .attr('x1', d => flatNodes.find(n => n.id === (typeof d.source === 'object' ? d.source.id : d.source))?.x || 0)
+        .attr('y1', d => flatNodes.find(n => n.id === (typeof d.source === 'object' ? d.source.id : d.source))?.y || 0)
+        .attr('x2', d => flatNodes.find(n => n.id === (typeof d.target === 'object' ? d.target.id : d.target))?.x || 0)
+        .attr('y2', d => flatNodes.find(n => n.id === (typeof d.target === 'object' ? d.target.id : d.target))?.y || 0);
+
+      const nodeEls = nodeG.selectAll('.tree-node-group')
+        .data(flatNodes)
+        .join('g')
+        .attr('class', 'tree-node-group')
+        .call(d3.drag<any, FlatNode>()
+          .on('start', function() { d3.select(this).raise(); })
+          .on('drag', function(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+          })
+          .on('end', function(event, d) {
+            d.fx = null;
+            d.fy = null;
+          }));
+
+      nodeEls.append('circle')
+        .attr('class', 'tree-node-avatar')
+        .attr('r', NODE_R)
+        .attr('fill', d => {
+          if (d.profile_photo_url) return 'var(--color-surface-container-lowest)';
+          if (d.gender === 'male') return 'var(--color-primary-fixed-dim)';
+          if (d.gender === 'female') return 'var(--color-secondary-fixed-dim)';
+          return 'var(--color-tertiary-fixed-dim)';
+        });
+
+      nodeEls.append('text')
+        .attr('class', 'tree-node-initials')
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'central')
+        .text(d => `${d.first_name[0]}${d.last_name[0]}`);
+
+      nodeEls.append('text')
+        .attr('class', 'tree-node-name')
+        .attr('text-anchor', 'middle')
+        .attr('y', NODE_R + 14)
+        .text(d => `${d.first_name} ${d.last_name[0]}.`);
+
+      nodeEls.on('click', (event, d) => {
+        event.stopPropagation();
+        selectedNodeId = d.id;
+        updateFlatSelection();
+        openPanel(d.id);
+        centerOnFlatNode(d.id);
+        history.replaceState(null, '', `#person-${d.id}`);
+      });
+
+      // Click on background to deselect
+      svg.on('click', (event) => {
+        if (event.target === svg.node()) {
+          selectedNodeId = null;
+          updateFlatSelection();
+          history.replaceState(null, '', window.location.pathname);
+        }
+      });
+
+      // Update flat selection visuals
+      function updateFlatSelection() {
+        nodeEls.classed('selected', (d: any) => d.id === selectedNodeId);
+      }
+
+      // Center on node in flat layout
+      function centerOnFlatNode(nodeId: string) {
+        const node = flatNodes.find(n => n.id === nodeId);
+        if (!node) return;
+        const transform = d3.zoomIdentity
+          .translate(w / 2 - (node.x || 0), h / 2 - (node.y || 0))
+          .scale(currentZoom > 0.5 ? currentZoom : 1);
+        svg.transition().duration(500).call(zoom.transform, transform);
+      }
+
+      // Deep link: check hash on load in flat layout
+      const flatHash = window.location.hash;
+      if (flatHash.startsWith('#person-')) {
+        const personId = flatHash.replace('#person-', '');
+        if (deepLinkTimeout) clearTimeout(deepLinkTimeout);
+        deepLinkTimeout = setTimeout(() => {
+          selectedNodeId = personId;
+          updateFlatSelection();
+          centerOnFlatNode(personId);
+          openPanel(personId);
+        }, 800);
+      }
+
+      sim.on('tick', () => {
+        linkEls
+          .attr('x1', d => (d.source as FlatNode).x!)
+          .attr('y1', d => (d.source as FlatNode).y!)
+          .attr('x2', d => (d.target as FlatNode).x!)
+          .attr('y2', d => (d.target as FlatNode).y!);
+
+        nodeEls.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+
+      // Loading hide
+      const loading = document.getElementById('tree-loading');
+      if (loading) loading.hidden = true;
+
+      // Zoom controls for flat
+      const zoomInBtn = document.getElementById('zoom-in-btn');
+      const zoomOutBtn = document.getElementById('zoom-out-btn');
+      const zoomResetBtn = document.getElementById('zoom-reset-btn');
+      if (zoomInBtn) zoomInBtn.addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.4));
+      if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 0.7));
+      if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity));
+
+      svg.on('wheel', (event) => {
+        event.preventDefault();
+        svg.transition().duration(200).call(zoom.scaleBy, event.deltaY > 0 ? 0.85 : 1.15);
+      });
+    }
+  }
+</script>
+
+<style>
+  /* --- Panel Shared Styles --- */
+  .panel-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    flex-shrink: 0;
+    background-color: var(--color-primary-fixed-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .panel-photo { width: 100%; height: 100%; object-fit: cover; }
+  .panel-initials {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 500;
+    color: var(--color-on-primary-fixed);
+  }
+
+  .panel-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-4);
+  }
+
+  .panel-field-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-on-surface-variant);
+  }
+
+  .panel-bio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+
+  .panel-bio-text {
+    font-size: var(--text-sm);
+    color: var(--color-on-surface);
+    white-space: pre-wrap;
+    line-height: var(--leading-relaxed);
+  }
+
+  .panel-section {
+    margin-bottom: var(--space-6);
+  }
+
+  .panel-section-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);
+  }
+
+  .panel-section-header .panel-section-title { margin-bottom: 0; }
+
+  .panel-add-rel-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    font-size: var(--text-xs); font-weight: 600;
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-full);
+    background: transparent; color: var(--color-on-surface-variant);
+    cursor: pointer; transition: all var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .panel-add-rel-btn:hover {
+    border-color: var(--color-primary); color: var(--color-primary);
+    background-color: oklch(35% 0.03 145 / 8%);
+  }
+
+  .panel-rel-group { margin-bottom: var(--space-4); }
+  .panel-rel-group-label {
+    font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--color-on-surface-variant);
+    margin-bottom: var(--space-2);
+  }
+
+  .panel-rel-items {
+    display: flex; flex-direction: column; gap: var(--space-2);
+  }
+
+  .panel-section-title {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-on-surface-variant);
+    margin-bottom: var(--space-3);
+  }
+
+  .panel-empty {
+    font-size: var(--text-sm);
+    color: var(--color-on-surface-variant);
+    font-style: italic;
+  }
+
+  .panel-family-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .family-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface-container);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .family-link:hover { background: var(--color-surface-container-high); }
+
+  .family-link-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary-fixed-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-on-primary-fixed);
+    flex-shrink: 0;
+  }
+
+  .family-link-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .family-link-name {
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .family-link-role {
+    font-size: var(--text-xs);
+    color: var(--color-on-surface-variant);
+  }
+
+  /* --- Loading Skeleton --- */
+  .panel-loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+  }
+
+  .skeleton-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-full);
+    background: var(--color-outline-variant);
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-line {
+    height: 14px;
+    border-radius: var(--radius-sm);
+    background: var(--color-outline-variant);
+    animation: shimmer 1.5s ease-in-out infinite;
+    width: 65%;
+  }
+
+  .skeleton-line-lg { height: 20px; width: 80%; }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-avatar, .skeleton-line { animation-duration: 3s; }
+  }
+
+  /* --- Panel Profile Header --- */
+  .panel-profile-header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .panel-name {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 500;
+    margin-bottom: var(--space-2);
+  }
+
+  .panel-root-badge {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary-fixed);
+    color: var(--color-on-primary-fixed);
+    margin-bottom: var(--space-2);
+  }
+
+  .panel-vitals {
+    font-size: var(--text-sm);
+    color: var(--color-on-surface-variant);
+  }
+
+  /* --- Panel Meta --- */
+  .panel-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-outline-variant);
+  }
+
+  .panel-edit-info {
+    font-size: var(--text-xs);
+    color: var(--color-on-surface-variant);
+  }
+
+  /* --- Panel Error --- */
+  .panel-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-on-surface-variant);
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--ease-out-quint);
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  .btn-primary:hover { background-color: var(--color-primary-container); }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-on-surface-variant);
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+
+  .btn-outline {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+  }
+
+  .btn-outline:hover {
+    background-color: oklch(35% 0.03 145 / 8%);
+  }
+
+  .btn-sm {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+  }
+
+  /* --- Responsive: Mobile --- */
+  @media (max-width: 640px) {
+    .top-bar-inner {
+      height: 56px;
+    }
+
+    .tree-name {
+      font-size: var(--text-lg);
+    }
+
+    .top-bar-right {
+      gap: var(--space-1);
+    }
+
+    .profile-panel {
+      width: 100vw;
+      max-width: 100vw;
+    }
+
+    .tree-toolbar {
+      top: var(--space-3);
+      padding: var(--space-1);
+    }
+
+    .tree-breadcrumb {
+      top: 72px;
+      left: var(--space-3);
+      right: var(--space-3);
+      max-width: none;
+    }
+
+    .breadcrumb-list {
+      font-size: 10px;
+    }
+
+    /* Ensure 44px min touch targets on mobile */
+    .toolbar-btn {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  /* --- High Contrast Mode --- */
+  @media (prefers-contrast: high) {
+    :root {
+      --color-outline-variant: oklch(45% 0.02 30);
+      --color-outline: oklch(35% 0.02 30);
+    }
+
+    .toolbar-btn,
+    .btn-ghost:hover,
+    .back-link:hover,
+    .nav-back:hover {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+    }
+
+    .tree-link {
+      stroke-width: 3;
+    }
+
+    .profile-panel,
+    .rel-modal-card,
+    .tree-card {
+      border-width: 2px;
+      border-color: var(--color-outline);
+    }
+  }
+
+  /* --- Reduced Motion --- */
+  @media (prefers-reduced-motion: reduce) {
+    .profile-panel {
+      transition: none;
+    }
+
+    .toolbar-btn:active {
+      transform: none;
+    }
+
+    .btn:active {
+      transform: none;
+    }
+
+    svg {
+      transition: none;
+    }
+  }
+</style>
